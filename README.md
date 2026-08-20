@@ -285,7 +285,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ using Tauri and Vue**
+# 🙏 Thank You
+
+## To Tuhan Yang Maha Esa
+
+Thank you for the health, strength, and wisdom to complete this project. Every line of code, every solved bug, and every moment of inspiration comes from Your grace.
+
+*"Dengan menyebut nama Allah Yang Maha Pengasih, Maha Penyayang."*
+
+## To Pelajarin.ai
+
+Thank you for inspiring this project. Your vision for AI-powered learning showed what's possible when technology meets education. Shinrin is built on the foundation you laid.
+
+Website: [pelajarin.ai](https://pelajarin.ai)
+
+---
+
+**Shinrin** — *A forest of productivity, growing from gratitude.* 🌲
 
 [Report Bug](https://github.com/LiquidSamurott/shinrin/issues) · [Request Feature](https://github.com/LiquidSamurott/shinrin/issues)
 
