@@ -1,0 +1,147 @@
+================================================================================
+                    SHINRIN AI - MODEL FILES GUIDE
+================================================================================
+
+📁 LOCATION: src-tauri/models/
+
+This folder contains the AI model files required for the Shinrin application's
+AI Assistant features.
+
+================================================================================
+                          REQUIRED MODEL
+================================================================================
+
+File: Qwen3-4B-Q6_K.gguf
+Size: ~3.3 GB
+Status: NOT INCLUDED IN REPO (Download separately)
+
+The application expects this file to be present in this folder. Without it,
+the AI Assistant features will not work.
+
+================================================================================
+                    DOWNLOAD INSTRUCTIONS
+================================================================================
+
+OPTION 1: Download from Hugging Face (Recommended)
+---------------------------------------------------
+1. Visit: https://huggingface.co/Qwen/Qwen3-4B-GGUF
+2. Download: Qwen3-4B-Q6_K.gguf
+3. Place the file in this folder (src-tauri/models/)
+
+OPTION 2: Use a Smaller Model (If you have limited storage)
+-----------------------------------------------------------
+Alternative models that work with Shinrin:
+
+| Model File                          | Size     | Quality  |
+|-------------------------------------|----------|----------|
+| Qwen3-4B-Q4_K_M.gguf               | ~2.5 GB  | Good     |
+| Qwen3-4B-Q3_K_M.gguf               | ~1.8 GB  | Medium   |
+| Qwen3-4B-Q2_K.gguf                 | ~1.0 GB  | Basic    |
+
+Download from: https://huggingface.co/Qwen/Qwen3-4B-GGUF
+
+OPTION 3: Use a Different Compatible Model
+------------------------------------------
+Any GGUF model compatible with llama.cpp should work:
+
+- Phi-3-mini-4k-instruct-Q4_K_M.gguf
+- Mistral-7B-Instruct-v0.3-Q4_K_M.gguf
+- Llama-3-8B-Instruct-Q4_K_M.gguf
+
+================================================================================
+                    SYSTEM REQUIREMENTS
+================================================================================
+
+Minimum Requirements:
+----------------------
+- RAM: 8 GB (16 GB recommended for 3.3 GB model)
+- Storage: 4 GB free space for the model file
+- CPU: Any modern multi-core processor
+- GPU: Optional (for faster inference)
+
+Performance Tips:
+------------------
+- Use Q3 or Q2 models if you have limited RAM
+- The Q6 model provides the best quality but uses more memory
+- Close other applications to free up memory for the AI model
+
+================================================================================
+                    TROUBLESHOOTING
+================================================================================
+
+Q: The AI Assistant doesn't respond
+-----------------------------------
+A: Check if the model file exists and is not corrupted:
+   - Verify the file is in: src-tauri/models/Qwen3-4B-Q6_K.gguf
+   - Check file size: Should be ~3.3 GB
+   - If file is incomplete, re-download it
+
+Q: "Failed to load model" error
+--------------------------------
+A: Common causes:
+   1. Insufficient RAM - Try using a smaller model (Q3 or Q2)
+   2. Corrupted file - Re-download the model
+   3. Path issues - Make sure the file is in the correct folder
+
+Q: The app is using too much RAM
+---------------------------------
+A: Switch to a smaller quantized model:
+   1. Download Qwen3-4B-Q2_K.gguf
+   2. Rename or replace the existing file
+   3. Restart the application
+
+Q: Slow response times
+----------------------
+A: Try these optimizations:
+   1. Use a smaller model (Q3 or Q2)
+   2. Close other applications to free up CPU
+   3. If available, use GPU acceleration
+
+================================================================================
+                    MANUAL DOWNLOAD COMMANDS
+================================================================================
+
+Windows (PowerShell):
+---------------------
+# Download using curl (requires curl installed)
+curl -L https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf -o Qwen3-4B-Q6_K.gguf
+
+# Or using Invoke-WebRequest
+Invoke-WebRequest -Uri "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf" -OutFile "Qwen3-4B-Q6_K.gguf"
+
+macOS/Linux (Terminal):
+-----------------------
+# Using wget
+wget https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf
+
+# Using curl
+curl -L https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf -o Qwen3-4B-Q6_K.gguf
+
+================================================================================
+                    LEGAL & LICENSE
+================================================================================
+
+This model is provided under its own license terms. Please review:
+- Qwen3 License: https://github.com/QwenLM/Qwen/blob/main/LICENSE
+- The model file must be used in compliance with its license
+
+================================================================================
+                    SUPPORT
+================================================================================
+
+For help with models:
+- GitHub Issues: https://github.com/LiquidSamurott/shinrin/issues
+- Discussion: https://github.com/LiquidSamurott/shinrin/discussions
+
+For model-specific issues:
+- Hugging Face: https://huggingface.co/Qwen/Qwen3-4B-GGUF
+- llama.cpp: https://github.com/ggerganov/llama.cpp
+
+================================================================================
+                    LAST UPDATED
+================================================================================
+
+Date: August 2026
+Version: 1.0.0
+
+================================================================================
