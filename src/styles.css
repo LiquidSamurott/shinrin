@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, system-ui, sans-serif;
+
+  /* ==========================================
+     Shinrin Theme Variables (Accent Palette)
+  ========================================== */
+  --accent-400: #34d399;
+  --accent-500: #10b981;
+  --accent-600: #059669;
+
+  /* Application colors */
+  --app-bg: #020617;
+  --app-surface: #0f172a;
+  --app-surface-2: #111827;
+
+  --app-text: #f8fafc;
+  --app-text-secondary: #cbd5e1;
+  --app-muted: #94a3b8;
+
+  --app-border: rgba(255, 255, 255, 0.10);
+  --app-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Glass */
+  --glass-bg: rgba(15, 23, 42, 0.55);
+  --glass-bg-light: rgba(255, 255, 255, 0.05);
+
+  /* Dynamic Glow */
+  --accent-shadow: color-mix(in srgb, var(--accent-500) 25%, transparent);
+
+  color-scheme: dark;
+}
+
+/* ==========================================
+   Global Reset
+========================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: var(--app-bg);
+  color: var(--app-text);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+/* ==========================================
+   Scrollbars
+========================================== */
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--app-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--app-muted);
+  opacity: 0.35;
+  border-radius: 9999px;
+  border: 2px solid var(--app-surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-500);
+}
+
+/* ==========================================
+   Selection
+========================================== */
+
+::selection {
+  background: color-mix(
+    in srgb,
+    var(--accent-500) 30%,
+    transparent
+  );
+  color: var(--app-text);
+}
+
+/* ==========================================
+   Common Shinrin utility classes
+========================================== */
+
+.shinrin-surface {
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+.shinrin-surface-2 {
+  background: var(--app-surface-2);
+  color: var(--app-text);
+}
+
+.shinrin-border {
+  border-color: var(--app-border);
+}
+
+.shinrin-accent {
+  color: var(--accent-400);
+}
+
+.shinrin-accent-bg {
+  background: var(--accent-500);
+}
+
+.shinrin-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--app-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.shinrin-button {
+  background: linear-gradient(
+    135deg,
+    var(--accent-600),
+    var(--accent-500)
+  );
+  color: #020617;
+  font-weight: 600;
+  box-shadow: 0 10px 25px -5px var(--accent-shadow);
+  transition:
+    filter 200ms ease,
+    transform 150ms ease,
+    box-shadow 200ms ease;
+}
+
+.shinrin-button:hover {
+  filter: brightness(1.1);
+}
+
+.shinrin-button:active {
+  transform: scale(0.98);
+}

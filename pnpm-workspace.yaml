@@ -1,0 +1,2 @@
+allowBuilds:
+  node-sass: true
