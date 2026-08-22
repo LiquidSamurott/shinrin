@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface AiChatOptions {
   useWeb?: boolean;
   searxngUrl?: string;
+  attachments?: any[];
 }
 
 export async function aiChat(
@@ -13,6 +14,6 @@ export async function aiChat(
     prompt,
     useWeb: options.useWeb ?? false,
     searxngUrl: options.searxngUrl ?? "",
+    attachments: options.attachments ?? [],
   });
 }
-

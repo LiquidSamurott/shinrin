@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { Bot, Sparkles, X, Check, Copy } from "@lucide/vue";
+import { ref, computed, watch } from "vue";
+import { Bot, Sparkles, X, Check, Copy, Pencil, Save } from "@lucide/vue";
 
 import { useKanbanStore } from "../../stores/kanbanactions/kanban";
 import {
@@ -25,22 +25,28 @@ const result = ref("");
 const error = ref("");
 const copied = ref(false);
 
+// Content picker state
+const selectedContent = ref("");
+const customContent = ref("");
+const useCustomContent = ref(false);
+const showWordCount = ref(true);
+
+// Edit mode state
+const isEditing = ref(false);
+const editContent = ref("");
+
 /*
 ============================================================
-EXTRACT CARD CONTENT
-============================================================
-
-The AI works on card.content only.
-
-Because content is currently typed as `any`, handle the
-common cases safely:
-
-- string
-- null / undefined
-- objects containing text
-- JSON-like editor content
+EXTRACT AND CLEAN CONTENT
 ============================================================
 */
+
+function cleanHtml(content: string): string {
+  return content
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
 
 function extractContent(content: unknown): string {
   if (content == null) {
@@ -48,7 +54,7 @@ function extractContent(content: unknown): string {
   }
 
   if (typeof content === "string") {
-    return content.trim();
+    return cleanHtml(content);
   }
 
   if (typeof content === "number" || typeof content === "boolean") {
@@ -56,9 +62,102 @@ function extractContent(content: unknown): string {
   }
 
   try {
-    return JSON.stringify(content, null, 2);
+    const stringified = JSON.stringify(content, null, 2);
+    return cleanHtml(stringified);
   } catch {
     return "";
+  }
+}
+
+// Helper to get preview
+function getPreview(text: unknown, maxLength: number = 30): string {
+  const clean = extractContent(text);
+  if (!clean) return 'Empty';
+  return clean.slice(0, maxLength) + (clean.length > maxLength ? '...' : '');
+}
+
+/*
+============================================================
+BUILD SELECTED CONTENT
+============================================================
+*/
+
+function buildSelectedContent(): string {
+  if (useCustomContent.value && customContent.value.trim()) {
+    return cleanHtml(customContent.value);
+  }
+
+  if (!card.value) return "";
+
+  // Only use content field
+  if (card.value.content) {
+    return extractContent(card.value.content);
+  }
+
+  return "";
+}
+
+function getWordCount(text: string): number {
+  return text.split(/\s+/).filter(w => w.length > 0).length;
+}
+
+// Watch for changes to update selected content
+watch(
+  [card, customContent, useCustomContent],
+  () => {
+    selectedContent.value = buildSelectedContent();
+  },
+  { immediate: true }
+);
+
+/*
+============================================================
+CONTENT PICKER TOGGLE
+============================================================
+*/
+
+function toggleCustomContent() {
+  useCustomContent.value = !useCustomContent.value;
+  if (useCustomContent.value) {
+    customContent.value = selectedContent.value;
+  }
+}
+
+function resetContentPicker() {
+  customContent.value = "";
+  useCustomContent.value = false;
+  selectedContent.value = buildSelectedContent();
+}
+
+/*
+============================================================
+EDIT CONTENT
+============================================================
+*/
+
+function startEditing() {
+  editContent.value = selectedContent.value;
+  isEditing.value = true;
+}
+
+function cancelEditing() {
+  isEditing.value = false;
+  editContent.value = "";
+}
+
+function saveEditedContent() {
+  if (editContent.value.trim()) {
+    // If using custom content, update it
+    if (useCustomContent.value) {
+      customContent.value = editContent.value;
+    } else {
+      // Otherwise, switch to custom content mode with the edited text
+      useCustomContent.value = true;
+      customContent.value = editContent.value;
+    }
+    selectedContent.value = buildSelectedContent();
+    isEditing.value = false;
+    editContent.value = "";
   }
 }
 
@@ -71,12 +170,11 @@ RUN AI ACTION
 async function runAction(action: KanbanAiAction) {
   if (!card.value) return;
 
-  const content = extractContent(card.value.content);
+  const content = selectedContent.value || buildSelectedContent();
 
   if (!content) {
     error.value =
-      "This card does not contain any content for the AI to work with.";
-
+      "No content selected. Please choose what content you want the AI to work with.";
     result.value = "";
     return;
   }
@@ -111,9 +209,7 @@ async function copyResult() {
 
   try {
     await navigator.clipboard.writeText(result.value);
-
     copied.value = true;
-
     window.setTimeout(() => {
       copied.value = false;
     }, 1500);
@@ -134,6 +230,9 @@ function close() {
   result.value = "";
   error.value = "";
   copied.value = false;
+  resetContentPicker();
+  isEditing.value = false;
+  editContent.value = "";
 
   emit("close");
 }
@@ -153,13 +252,14 @@ function close() {
       p-6
       backdrop-blur-sm
     "
+    @click.self="close"
   >
     <div
       class="
         flex
-        max-h-[85vh]
+        max-h-[90vh]
         w-full
-        max-w-2xl
+        max-w-3xl
         flex-col
         overflow-hidden
         rounded-2xl
@@ -208,7 +308,7 @@ function close() {
             </h2>
 
             <p class="text-xs text-slate-500">
-              Work with this card's content
+              {{ isEditing ? 'Editing content' : 'Work with this card\'s content' }}
             </p>
           </div>
         </div>
@@ -235,10 +335,9 @@ function close() {
            BODY
       =================================================== -->
 
-      <div class="overflow-y-auto px-6 py-5">
+      <div class="flex-1 overflow-y-auto px-6 py-5">
 
-        <!-- Content preview -->
-
+        <!-- Content Picker -->
         <div
           v-if="card"
           class="
@@ -247,53 +346,231 @@ function close() {
             border
             border-white/[0.07]
             bg-white/[0.03]
-            p-4
+            overflow-hidden
           "
         >
-          <div class="mb-2 flex items-center justify-between">
-            <span
-              class="
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-[0.16em]
-                text-slate-600
-              "
-            >
-              Card Content
-            </span>
-
-            <span
-              class="
-                rounded-full
-                border
-                border-emerald-500/20
-                bg-emerald-500/10
-                px-2
-                py-0.5
-                text-[9px]
-                font-medium
-                text-emerald-400
-              "
-            >
-              AI INPUT
-            </span>
+          <!-- Header -->
+          <div class="flex items-center justify-between border-b border-white/[0.07] px-4 py-2">
+            <div class="flex items-center gap-2">
+              <span
+                class="
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.16em]
+                  text-slate-600
+                "
+              >
+                {{ isEditing ? 'Editing' : 'Content Selector' }}
+              </span>
+              <span
+                v-if="selectedContent && showWordCount && !isEditing"
+                class="
+                  rounded-full
+                  border
+                  border-slate-700
+                  bg-slate-800/50
+                  px-2
+                  py-0.5
+                  text-[9px]
+                  font-medium
+                  text-slate-400
+                "
+              >
+                {{ getWordCount(selectedContent) }} words
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <!-- Edit button -->
+              <button
+                v-if="!isEditing && selectedContent"
+                @click="startEditing"
+                class="
+                  rounded-lg
+                  px-2
+                  py-1
+                  text-[10px]
+                  text-slate-500
+                  transition
+                  hover:bg-white/10
+                  hover:text-white
+                  flex
+                  items-center
+                  gap-1
+                "
+              >
+                <Pencil class="h-3 w-3" />
+                Edit
+              </button>
+              <button
+                v-if="!isEditing"
+                @click="resetContentPicker"
+                class="
+                  rounded-lg
+                  px-2
+                  py-1
+                  text-[10px]
+                  text-slate-500
+                  transition
+                  hover:bg-white/10
+                  hover:text-white
+                "
+              >
+                Reset
+              </button>
+            </div>
           </div>
 
-          <div
-            class="
-              max-h-32
-              overflow-y-auto
-              whitespace-pre-wrap
-              text-sm
-              leading-6
-              text-slate-300
-            "
-          >
-            {{
-              extractContent(card.content) ||
-              "No content available"
-            }}
+          <!-- Content Options -->
+          <div v-if="!isEditing" class="p-4 space-y-3">
+            <div v-if="!useCustomContent" class="space-y-2">
+              <!-- Only Content field -->
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-slate-300">Content</span>
+                <span class="text-xs text-slate-500 ml-auto">
+                  {{ getPreview(card.content) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Preview of selected content -->
+            <div
+              v-if="selectedContent && !useCustomContent"
+              class="
+                rounded-lg
+                border
+                border-white/[0.05]
+                bg-black/20
+                p-3
+                max-h-24
+                overflow-y-auto
+              "
+            >
+              <p class="text-xs text-slate-400 leading-5">
+                {{ selectedContent.slice(0, 150) }}{{ selectedContent.length > 150 ? '...' : '' }}
+              </p>
+            </div>
+
+            <!-- Divider -->
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-white/[0.05]"></div>
+              </div>
+              <div class="relative flex justify-center">
+                <button
+                  @click="toggleCustomContent"
+                  class="
+                    px-3
+                    py-1
+                    text-[10px]
+                    font-medium
+                    text-slate-500
+                    bg-slate-950
+                    hover:text-slate-300
+                    transition
+                  "
+                >
+                  {{ useCustomContent ? 'Use Card Content' : 'Custom Selection' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Custom Content -->
+            <div v-if="useCustomContent">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400">Custom Content</span>
+                <span class="text-[10px] text-slate-500">
+                  {{ getWordCount(customContent) }} words
+                </span>
+              </div>
+              <textarea
+                v-model="customContent"
+                class="
+                  w-full
+                  min-h-[100px]
+                  rounded-lg
+                  border
+                  border-white/10
+                  bg-slate-900/50
+                  p-3
+                  text-sm
+                  text-slate-200
+                  outline-none
+                  transition
+                  resize-none
+                  focus:border-emerald-500/40
+                  placeholder:text-slate-600
+                "
+                placeholder="Enter custom content for the AI to work with..."
+              />
+            </div>
+          </div>
+
+          <!-- Edit Mode -->
+          <div v-else class="p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-slate-400">Edit Content</span>
+              <span class="text-[10px] text-slate-500">
+                {{ getWordCount(editContent) }} words
+              </span>
+            </div>
+            <textarea
+              v-model="editContent"
+              class="
+                w-full
+                min-h-[150px]
+                rounded-lg
+                border
+                border-white/10
+                bg-slate-900/50
+                p-3
+                text-sm
+                text-slate-200
+                outline-none
+                transition
+                resize-none
+                focus:border-emerald-500/40
+                placeholder:text-slate-600
+              "
+              placeholder="Edit the content that will be sent to the AI..."
+            />
+            <div class="mt-3 flex items-center justify-end gap-2">
+              <button
+                @click="cancelEditing"
+                class="
+                  rounded-lg
+                  px-3
+                  py-1.5
+                  text-xs
+                  text-slate-400
+                  transition
+                  hover:bg-white/10
+                  hover:text-white
+                "
+              >
+                Cancel
+              </button>
+              <button
+                @click="saveEditedContent"
+                class="
+                  flex
+                  items-center
+                  gap-1.5
+                  rounded-lg
+                  bg-emerald-500
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-medium
+                  text-white
+                  transition
+                  hover:bg-emerald-400
+                "
+              >
+                <Save class="h-3.5 w-3.5" />
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
 
@@ -322,7 +599,7 @@ function close() {
 
           <button
             @click="runAction('improve')"
-            :disabled="loading"
+            :disabled="loading || !selectedContent"
             class="
               group
               rounded-xl
@@ -362,7 +639,7 @@ function close() {
 
           <button
             @click="runAction('rewrite')"
-            :disabled="loading"
+            :disabled="loading || !selectedContent"
             class="
               group
               rounded-xl
@@ -400,7 +677,7 @@ function close() {
 
           <button
             @click="runAction('clarify')"
-            :disabled="loading"
+            :disabled="loading || !selectedContent"
             class="
               group
               rounded-xl
@@ -438,7 +715,7 @@ function close() {
 
           <button
             @click="runAction('generate')"
-            :disabled="loading"
+            :disabled="loading || !selectedContent"
             class="
               group
               rounded-xl
@@ -476,7 +753,7 @@ function close() {
 
           <button
             @click="runAction('checklist')"
-            :disabled="loading"
+            :disabled="loading || !selectedContent"
             class="
               group
               col-span-2
@@ -546,7 +823,7 @@ function close() {
               </p>
 
               <p class="mt-0.5 text-[11px] text-emerald-400/50">
-                Analyzing the card content
+                Analyzing the selected content
               </p>
             </div>
           </div>
@@ -644,3 +921,31 @@ function close() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Custom checkbox styling */
+input[type="checkbox"] {
+  accent-color: #10b981;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+</style>

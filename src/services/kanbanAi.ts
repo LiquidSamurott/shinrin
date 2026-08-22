@@ -96,11 +96,25 @@ Do not return an essay or explanation.
 `,
 };
 
+/*
+============================================================
+CLEAN HTML CONTENT
+============================================================
+*/
+
+function cleanHtmlContent(content: string): string {
+  return content
+    .replace(/<[^>]*>/g, '') // Remove all HTML tags
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
 export async function assistKanbanCard(
   action: KanbanAiAction,
   input: KanbanCardInput,
 ): Promise<string> {
-  const content = input.content.trim();
+  // Clean HTML content before processing
+  const content = cleanHtmlContent(input.content.trim());
 
   if (!content) {
     throw new Error(
@@ -108,7 +122,7 @@ export async function assistKanbanCard(
     );
   }
 
-const prompt = `
+  const prompt = `
 You are Shinrin's Kanban AI assistant.
 
 You are editing the CONTENT inside a Kanban card.
@@ -138,5 +152,7 @@ Do not perform simple synonym replacement.
 Return ONLY the transformed content.
 `;
 
-  return await aiChat(prompt);
+  return await aiChat(prompt, {
+    attachments: [],
+  });
 }
