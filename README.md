@@ -12,6 +12,56 @@
 
 </div>
 
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+### 🏠 Dashboard Overview
+<img width="2879" height="1683" alt="image" src="https://github.com/user-attachments/assets/297bef4b-85c8-4427-9cb4-0485a16cc1ab" />
+*Main dashboard showing all features at a glance*
+
+</div>
+
+<details>
+<summary><b>📊 Click to view all screenshots</b></summary>
+<br>
+
+<div align="center">
+
+### 🤖 AI Assistant
+![AI Assistant](screenshots/ai-assistant.png)
+*Local AI assistant generating flashcards from notes*
+
+### 📊 Kanban Boards
+<img width="2868" height="1700" alt="image" src="https://github.com/user-attachments/assets/08a56abf-b4ad-45a3-a2e6-971f623cc249" />
+<img width="629" height="1444" alt="image" src="https://github.com/user-attachments/assets/fe7fd78e-f9de-41a2-9671-8800900a0cc6" />
+
+<img width="2872" height="1689" alt="image" src="https://github.com/user-attachments/assets/159bb023-3de6-4023-8d6b-cc8987c2fcfb" />
+*Drag-and-drop task management with AI-powered suggestions*
+
+### 📅 Calendar
+<img width="2879" height="1706" alt="image" src="https://github.com/user-attachments/assets/1c0d6f00-fd51-4650-8341-58271d3af5de" />
+*Full-featured calendar with event management*
+
+### 🃏 Flashcards
+<img width="2879" height="1696" alt="image" src="https://github.com/user-attachments/assets/eb78f896-66ba-42bb-9062-89c9cc1c2055" />
+*Spaced repetition learning system with progress tracking*
+
+### ⏱️ Pomodoro Timer
+<img width="2879" height="1707" alt="image" src="https://github.com/user-attachments/assets/a9163c86-22de-43fd-bf07-01812fdd05ed" />
+*Focus timer with session statistics*
+
+### ⚙️ Settings
+<img width="2879" height="1703" alt="image" src="https://github.com/user-attachments/assets/bcc56949-3c19-4757-b65c-981d46345278" />
+*Customizable app preferences*
+
+</div>
+</details>
+
+---
+
 ## 📖 About Shinrin
 
 **Shinrin** (Japanese for "forest") is a powerful, all-in-one productivity desktop application built with **Tauri** and **Vue 3**. It combines project management, time tracking, learning tools, and an on-device AI assistant - all in one beautiful, privacy-focused package.
@@ -157,6 +207,14 @@ shinrin/
 │   ├── services/          # AI and API services
 │   ├── db/                # Database operations
 │   └── views/             # Main page views
+├── screenshots/           # 📸 Application screenshots
+│   ├── dashboard.png
+│   ├── ai-assistant.png
+│   ├── kanban.png
+│   ├── calendar.png
+│   ├── flashcards.png
+│   ├── pomodoro.png
+│   └── settings.png
 ├── package.json
 └── vite.config.ts
 ```
@@ -306,3 +364,5 @@ Website: [pelajarin.ai](https://pelajarin.ai)
 [Report Bug](https://github.com/LiquidSamurott/shinrin/issues) · [Request Feature](https://github.com/LiquidSamurott/shinrin/issues)
 
 </div>
+
+---
