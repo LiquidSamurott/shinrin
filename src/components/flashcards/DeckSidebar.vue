@@ -7,18 +7,19 @@ import {
   Play, 
   Plus, 
   Tag, 
-  Trash2, 
   Star, 
   Clock, 
   Link as LinkIcon, 
   Download, 
   Upload, 
-  GripVertical 
+  GripVertical,
+  Settings 
 } from "@lucide/vue";
 
 import { useFlashcardStore } from "../../stores/flashcardactions";
 import { useKanbanStore } from "../../stores/kanbanactions/kanban";
 import { useTheme } from "../../composables/useTheme";
+import DeckSettingsModal from "./DeckSettingsModal.vue";
 
 import type { Deck } from "../../types/flashcard";
 
@@ -30,6 +31,10 @@ const router = useRouter();
 useTheme();
 
 const newDeck = ref("");
+
+// Modal state
+const isSettingsModalOpen = ref(false);
+const activeModalDeckId = ref<number | null>(null);
 
 const decks = computed<Deck[]>({
   get: () =>
@@ -59,10 +64,9 @@ function selectDeck(deck: Deck) {
   flashcards.selectDeck(deck.id);
 }
 
-async function deleteDeck(deck: Deck) {
-  if (!confirm(`Delete "${deck.name}"?`)) return;
-
-  await flashcards.deleteDeck(deck.id);
+function openDeckSettings(deckId: number) {
+  activeModalDeckId.value = deckId;
+  isSettingsModalOpen.value = true;
 }
 
 function studyDeck() {
@@ -228,14 +232,14 @@ function dueCount(deckId: number) {
           </div>
 
           <div class="flex items-center gap-1">
-            <!-- Delete Button -->
+            <!-- Settings Modal Button -->
             <button
               type="button"
-              @click.stop="deleteDeck(deck)"
-              class="rounded-lg p-1 text-slate-400 opacity-0 transition-all duration-150 hover:bg-red-500/20 hover:text-red-300 group-hover:opacity-100"
-              title="Delete deck"
+              @click.stop="openDeckSettings(deck.id)"
+              class="rounded-lg p-1 text-slate-400 opacity-0 transition-all duration-150 hover:bg-white/10 hover:text-white group-hover:opacity-100"
+              title="Deck settings"
             >
-              <Trash2 class="h-3.5 w-3.5" />
+              <Settings class="h-3.5 w-3.5" />
             </button>
 
             <!-- Drag Handle -->
@@ -330,6 +334,13 @@ function dueCount(deckId: number) {
         </button>
       </div>
     </div>
+
+    <!-- Deck Settings Modal -->
+    <DeckSettingsModal
+      :is-open="isSettingsModalOpen"
+      :deck-id="activeModalDeckId"
+      @close="isSettingsModalOpen = false"
+    />
   </aside>
 </template>
 

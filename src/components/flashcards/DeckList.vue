@@ -1,21 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { 
-  Pencil, 
-  Trash2, 
-  X, 
-  Check, 
   FolderOpen,
-  Plus
+  Plus,
+  Settings
 } from "@lucide/vue";
 import { useFlashcardStore } from "../../stores/flashcardactions/index";
+import DeckSettingsModal from "./DeckSettingsModal.vue";
 
 const flashcards = useFlashcardStore();
 
-// Local state for editing
-const editingDeckId = ref<number | null>(null);
-const editingDeckName = ref("");
-const showDeleteConfirm = ref<number | null>(null);
+// Modal State
+const isModalOpen = ref(false);
+const activeModalDeckId = ref<number | null>(null);
 
 const cards = computed(() => {
   if (!flashcards.selectedDeckId) return [];
@@ -36,41 +33,10 @@ const currentDeckName = computed(() => {
   return deck?.name || "Select a deck";
 });
 
-// Start renaming
-function startRename(deckId: number, currentName: string) {
-  editingDeckId.value = deckId;
-  editingDeckName.value = currentName;
-}
-
-// Cancel renaming
-function cancelRename() {
-  editingDeckId.value = null;
-  editingDeckName.value = "";
-}
-
-// Save renamed deck
-async function saveRename() {
-  if (editingDeckId.value === null) return;
-  const name = editingDeckName.value.trim();
-  if (!name) return;
-  
-  await flashcards.renameDeck(editingDeckId.value, name);
-  cancelRename();
-}
-
-// Delete deck
-async function deleteDeck(deckId: number) {
-  await flashcards.deleteDeck(deckId);
-  showDeleteConfirm.value = null;
-}
-
-// Handle Enter key for rename
-function handleRenameKeydown(event: KeyboardEvent) {
-  if (event.key === "Enter") {
-    saveRename();
-  } else if (event.key === "Escape") {
-    cancelRename();
-  }
+// Open Modal Helper
+function openDeckSettings(deckId: number) {
+  activeModalDeckId.value = deckId;
+  isModalOpen.value = true;
 }
 </script>
 
@@ -85,7 +51,6 @@ function handleRenameKeydown(event: KeyboardEvent) {
           Flashcards
         </h2>
         <button
-          v-if="flashcards.decks.length === 0"
           @click="flashcards.createDeck('New Deck')"
           class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-500"
         >
@@ -94,90 +59,71 @@ function handleRenameKeydown(event: KeyboardEvent) {
         </button>
       </div>
 
-      <!-- Deck Selector / Current Deck -->
-      <div class="relative">
-        <!-- Current deck display with actions -->
-        <div v-if="flashcards.selectedDeckId" class="flex items-center gap-2">
-          <!-- Rename input or display -->
-          <div v-if="editingDeckId === flashcards.selectedDeckId" class="flex-1">
-            <div class="flex items-center gap-1">
-              <input
-                v-model="editingDeckName"
-                @keydown="handleRenameKeydown"
-                @blur="saveRename"
-                class="flex-1 rounded-lg border border-indigo-500/30 bg-slate-800 px-2 py-1 text-sm text-white outline-none focus:border-indigo-500"
-                placeholder="Deck name..."
-                autofocus
-              />
-              <button
-                @click="saveRename"
-                class="rounded-lg p-1 text-emerald-400 transition hover:bg-emerald-500/20"
-                title="Save"
-              >
-                <Check class="h-4 w-4" />
-              </button>
-              <button
-                @click="cancelRename"
-                class="rounded-lg p-1 text-slate-400 transition hover:bg-white/10 hover:text-white"
-                title="Cancel"
-              >
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+      <!-- Decks List Bar -->
+      <div
+        v-if="flashcards.decks.length > 0"
+        class="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1"
+      >
+        <div
+          v-for="d in flashcards.decks"
+          :key="d.id"
+          class="group flex shrink-0 items-center rounded-md transition"
+          :class="
+            flashcards.selectedDeckId === d.id
+              ? 'bg-indigo-600'
+              : 'bg-slate-800'
+          "
+        >
+          <!-- Select Deck -->
+          <button
+            type="button"
+            @click="flashcards.selectedDeckId = d.id"
+            class="rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition"
+            :class="
+              flashcards.selectedDeckId === d.id
+                ? 'text-white'
+                : 'text-slate-400 hover:text-white'
+            "
+          >
+            {{ d.name }}
+          </button>
 
-          <!-- Deck display with actions -->
-          <div v-else class="flex flex-1 items-center gap-2">
-            <FolderOpen class="h-4 w-4 text-indigo-400 flex-shrink-0" />
-            <span class="flex-1 truncate text-sm font-medium text-white">
-              {{ currentDeckName }}
-            </span>
-            <div class="flex items-center gap-0.5">
-              <button
-                @click="startRename(flashcards.selectedDeckId!, currentDeckName)"
-                class="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-                title="Rename deck"
-              >
-                <Pencil class="h-3.5 w-3.5" />
-              </button>
-              <button
-                @click="showDeleteConfirm = flashcards.selectedDeckId"
-                class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/20 hover:text-rose-400"
-                title="Delete deck"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- No deck selected -->
-        <div v-else class="text-sm text-slate-400">
-          No deck selected
+          <!-- Edit Deck Settings Button -->
+          <button
+            type="button"
+            @click.stop="openDeckSettings(d.id)"
+            class="mr-0.5 rounded p-1 text-slate-400 opacity-0 transition hover:bg-white/10 hover:text-white group-hover:opacity-100"
+            title="Deck Settings"
+          >
+            <Settings class="h-3 w-3" />
+          </button>
         </div>
       </div>
 
-      <!-- Delete confirmation -->
-      <div
-        v-if="showDeleteConfirm !== null"
-        class="mt-3 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3"
-      >
-        <p class="text-sm text-rose-300">
-          Delete "{{ currentDeckName }}" and all its flashcards?
-        </p>
-        <div class="mt-2 flex items-center gap-2">
-          <button
-            @click="deleteDeck(showDeleteConfirm)"
-            class="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-rose-400"
-          >
-            Delete
-          </button>
-          <button
-            @click="showDeleteConfirm = null"
-            class="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10"
-          >
-            Cancel
-          </button>
+      <!-- Current Deck Display -->
+      <div class="relative">
+        <div v-if="flashcards.selectedDeckId" class="flex items-center justify-between">
+          <div class="flex flex-1 items-center gap-2 truncate pr-2">
+            <FolderOpen class="h-4 w-4 text-indigo-400 shrink-0" />
+            <span class="truncate text-sm font-medium text-white">
+              {{ currentDeckName }}
+            </span>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              @click="openDeckSettings(flashcards.selectedDeckId)"
+              class="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+              title="Deck Settings"
+            >
+              <Settings class="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="text-sm text-slate-400">
+          No deck selected
         </div>
       </div>
     </div>
@@ -228,5 +174,12 @@ function handleRenameKeydown(event: KeyboardEvent) {
         </p>
       </div>
     </div>
+
+    <!-- Deck Settings Modal -->
+    <DeckSettingsModal
+      :is-open="isModalOpen"
+      :deck-id="activeModalDeckId"
+      @close="isModalOpen = false"
+    />
   </aside>
 </template>
