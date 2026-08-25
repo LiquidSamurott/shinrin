@@ -1,3 +1,6 @@
+Here's the updated README with instructions for downloading the `ggml-small.bin` file:
+
+```markdown
 ================================================================================
                     SHINRIN AI - MODEL FILES GUIDE
 ================================================================================
@@ -5,18 +8,22 @@
 📁 LOCATION: src-tauri/models/
 
 This folder contains the AI model files required for the Shinrin application's
-AI Assistant features.
+AI Assistant and Speech-to-Text features.
 
 ================================================================================
-                          REQUIRED MODEL
+                          REQUIRED MODELS
 ================================================================================
 
-File: Qwen3-4B-Q6_K.gguf
-Size: ~3.3 GB
-Status: NOT INCLUDED IN REPO (Download separately)
+1. Qwen3-4B-Q6_K.gguf (AI Assistant)
+   Size: ~3.3 GB
+   Status: NOT INCLUDED IN REPO (Download separately)
 
-The application expects this file to be present in this folder. Without it,
-the AI Assistant features will not work.
+2. ggml-small.bin (Speech-to-Text)
+   Size: ~466 MB
+   Status: NOT INCLUDED IN REPO (Download separately)
+
+The application expects these files to be present in this folder. Without them,
+the AI Assistant and Speech-to-Text features will not work.
 
 ================================================================================
                     DOWNLOAD INSTRUCTIONS
@@ -26,27 +33,100 @@ OPTION 1: Download from Hugging Face (Recommended)
 ---------------------------------------------------
 1. Visit: https://huggingface.co/Qwen/Qwen3-4B-GGUF
 2. Download: Qwen3-4B-Q6_K.gguf
-3. Place the file in this folder (src-tauri/models/)
+3. Visit: https://huggingface.co/ggerganov/whisper.cpp
+4. Download: ggml-small.bin
+5. Place both files in this folder (src-tauri/models/)
 
-OPTION 2: Use a Smaller Model (If you have limited storage)
+OPTION 2: Use Smaller Models (If you have limited storage)
 -----------------------------------------------------------
-Alternative models that work with Shinrin:
+Alternative AI models that work with Shinrin:
 
 | Model File                          | Size     | Quality  |
 |-------------------------------------|----------|----------|
+| Qwen3-4B-Q6_K.gguf                 | ~3.3 GB  | Best     |
 | Qwen3-4B-Q4_K_M.gguf               | ~2.5 GB  | Good     |
 | Qwen3-4B-Q3_K_M.gguf               | ~1.8 GB  | Medium   |
 | Qwen3-4B-Q2_K.gguf                 | ~1.0 GB  | Basic    |
 
-Download from: https://huggingface.co/Qwen/Qwen3-4B-GGUF
+Alternative STT models (whisper.cpp):
 
-OPTION 3: Use a Different Compatible Model
-------------------------------------------
-Any GGUF model compatible with llama.cpp should work:
+| Model File          | Size     | Speed    | Accuracy |
+|---------------------|----------|----------|----------|
+| ggml-tiny.bin       | 75 MB    | Fastest  | Basic    |
+| ggml-base.bin       | 142 MB   | Fast     | Good     |
+| ggml-small.bin      | 466 MB   | Medium   | Very Good ⭐ |
+| ggml-medium.bin     | 1.5 GB   | Slow     | Excellent|
 
-- Phi-3-mini-4k-instruct-Q4_K_M.gguf
-- Mistral-7B-Instruct-v0.3-Q4_K_M.gguf
-- Llama-3-8B-Instruct-Q4_K_M.gguf
+Download STT models from: https://huggingface.co/ggerganov/whisper.cpp/tree/main
+
+================================================================================
+                    STEP-BY-STEP INSTALLATION
+================================================================================
+
+STEP 1: Download the Model Files
+---------------------------------
+Choose one of the following methods:
+
+A) Using Browser:
+   1. Go to https://huggingface.co/Qwen/Qwen3-4B-GGUF
+   2. Click on "Files" tab
+   3. Download Qwen3-4B-Q6_K.gguf
+   4. Go to https://huggingface.co/ggerganov/whisper.cpp
+   5. Download ggml-small.bin
+
+B) Using Command Line (Windows PowerShell):
+   ```powershell
+   # Navigate to models folder
+   cd src-tauri/models
+   
+   # Download AI model
+   curl -L https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf -o Qwen3-4B-Q6_K.gguf
+   
+   # Download STT model
+   curl -L https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin -o ggml-small.bin
+   ```
+
+C) Using Command Line (macOS/Linux):
+   ```bash
+   # Navigate to models folder
+   cd src-tauri/models
+   
+   # Download AI model
+   wget https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf
+   
+   # Download STT model
+   wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
+   ```
+
+STEP 2: Verify File Integrity
+------------------------------
+Check that the files are complete:
+
+| File                    | Expected Size     |
+|-------------------------|-------------------|
+| Qwen3-4B-Q6_K.gguf     | ~3.3 GB (3,544 MB) |
+| ggml-small.bin         | ~466 MB            |
+
+If the files are smaller than expected, the download was interrupted.
+Delete the partial files and try again.
+
+STEP 3: Place Files in Correct Location
+----------------------------------------
+Ensure both files are in:
+```
+src-tauri/models/
+├── Qwen3-4B-Q6_K.gguf
+└── ggml-small.bin
+```
+
+STEP 4: Launch Shinrin
+-----------------------
+Start the application:
+```bash
+pnpm tauri dev
+```
+
+The models will load automatically on first use.
 
 ================================================================================
                     SYSTEM REQUIREMENTS
@@ -55,15 +135,23 @@ Any GGUF model compatible with llama.cpp should work:
 Minimum Requirements:
 ----------------------
 - RAM: 8 GB (16 GB recommended for 3.3 GB model)
-- Storage: 4 GB free space for the model file
+- Storage: 5 GB free space for both model files
 - CPU: Any modern multi-core processor
 - GPU: Optional (for faster inference)
+
+STT Requirements:
+------------------
+- The ggml-small.bin model works on CPU
+- No GPU required for speech recognition
+- ~500 MB additional RAM during use
 
 Performance Tips:
 ------------------
 - Use Q3 or Q2 models if you have limited RAM
+- Use smaller STT models (tiny/base) for faster speech recognition
 - The Q6 model provides the best quality but uses more memory
-- Close other applications to free up memory for the AI model
+- The small STT model balances speed and accuracy
+- Close other applications to free up memory
 
 ================================================================================
                     TROUBLESHOOTING
@@ -76,46 +164,99 @@ A: Check if the model file exists and is not corrupted:
    - Check file size: Should be ~3.3 GB
    - If file is incomplete, re-download it
 
+Q: Speech-to-Text doesn't work
+------------------------------
+A: Common causes:
+   1. Missing ggml-small.bin file
+   2. Model file is corrupted - Re-download
+   3. Check the STT model path in configuration
+
 Q: "Failed to load model" error
 --------------------------------
 A: Common causes:
    1. Insufficient RAM - Try using a smaller model (Q3 or Q2)
    2. Corrupted file - Re-download the model
    3. Path issues - Make sure the file is in the correct folder
+   4. Permissions - Ensure the app can read the files
 
 Q: The app is using too much RAM
 ---------------------------------
-A: Switch to a smaller quantized model:
-   1. Download Qwen3-4B-Q2_K.gguf
-   2. Rename or replace the existing file
+A: Switch to smaller models:
+   1. Download smaller models:
+      - Qwen3-4B-Q2_K.gguf (1.0 GB)
+      - ggml-base.bin (142 MB)
+   2. Rename or replace the existing files
    3. Restart the application
 
 Q: Slow response times
 ----------------------
 A: Try these optimizations:
-   1. Use a smaller model (Q3 or Q2)
+   1. Use smaller models (Q3/Q2 for AI, base/tiny for STT)
    2. Close other applications to free up CPU
    3. If available, use GPU acceleration
+   4. For STT, smaller models are faster
+
+Q: "Model not found" error
+---------------------------
+A: Make sure the files are named exactly:
+   - Qwen3-4B-Q6_K.gguf (case sensitive on some OS)
+   - ggml-small.bin (case sensitive on some OS)
 
 ================================================================================
-                    MANUAL DOWNLOAD COMMANDS
+                    QUICK REFERENCE: MODEL OPTIONS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AI Models (Qwen)                                                          │
+├─────────────────┬─────────────┬─────────────────────────────────────────────┤
+│ Model           │ Size        │ Use Case                                    │
+├─────────────────┼─────────────┼─────────────────────────────────────────────┤
+│ Q6_K            │ 3.3 GB      │ Best quality for complex tasks              │
+│ Q4_K_M          │ 2.5 GB      │ Good balance of quality and speed           │
+│ Q3_K_M          │ 1.8 GB      │ Medium quality, faster                      │
+│ Q2_K            │ 1.0 GB      │ Basic quality, fastest                      │
+└─────────────────┴─────────────┴─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STT Models (Whisper)                                                      │
+├─────────────────┬─────────────┬─────────────────────────────────────────────┤
+│ Model           │ Size        │ Use Case                                    │
+├─────────────────┼─────────────┼─────────────────────────────────────────────┤
+│ ggml-tiny.bin   │ 75 MB       │ Fastest, basic accuracy                     │
+│ ggml-base.bin   │ 142 MB      │ Fast, good accuracy ⭐                      │
+│ ggml-small.bin  │ 466 MB      │ Balanced, very good accuracy               │
+│ ggml-medium.bin │ 1.5 GB      │ Slowest, excellent accuracy                │
+└─────────────────┴─────────────┴─────────────────────────────────────────────┘
+
+================================================================================
+                    QUICK DOWNLOAD COMMANDS
 ================================================================================
 
 Windows (PowerShell):
 ---------------------
-# Download using curl (requires curl installed)
-curl -L https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf -o Qwen3-4B-Q6_K.gguf
+```powershell
+# Navigate to models folder
+cd src-tauri/models
 
-# Or using Invoke-WebRequest
+# Download AI Model
 Invoke-WebRequest -Uri "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf" -OutFile "Qwen3-4B-Q6_K.gguf"
+
+# Download STT Model
+Invoke-WebRequest -Uri "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin" -OutFile "ggml-small.bin"
+```
 
 macOS/Linux (Terminal):
 -----------------------
-# Using wget
-wget https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf
+```bash
+# Navigate to models folder
+cd src-tauri/models
 
-# Using curl
+# Download AI Model
 curl -L https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.gguf -o Qwen3-4B-Q6_K.gguf
+
+# Download STT Model
+curl -L https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin -o ggml-small.bin
+```
 
 ================================================================================
                     LEGAL & LICENSE
@@ -123,7 +264,8 @@ curl -L https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q6_K.ggu
 
 This model is provided under its own license terms. Please review:
 - Qwen3 License: https://github.com/QwenLM/Qwen/blob/main/LICENSE
-- The model file must be used in compliance with its license
+- Whisper.cpp License: https://github.com/ggerganov/whisper.cpp/blob/master/LICENSE
+- The model files must be used in compliance with their licenses
 
 ================================================================================
                     SUPPORT
@@ -135,7 +277,7 @@ For help with models:
 
 For model-specific issues:
 - Hugging Face: https://huggingface.co/Qwen/Qwen3-4B-GGUF
-- llama.cpp: https://github.com/ggerganov/llama.cpp
+- Whisper.cpp: https://github.com/ggerganov/whisper.cpp
 
 ================================================================================
                     LAST UPDATED

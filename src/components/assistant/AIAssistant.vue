@@ -11,6 +11,8 @@ import {
   GitBranch,
   LoaderCircle,
   Clock,
+  Mic,
+  MicOff,
 } from "@lucide/vue";
 
 import FileAttachment from "./FileAttachment.vue";
@@ -22,6 +24,7 @@ import type { MindmapData } from "../../types/mindmap";
 import { sendAssistantMessage } from "../../services/aiService";
 import { generateMindmap } from "../../services/mindmapService";
 import { now } from "../../utils/date";
+import { useStt } from "../../composables/useSTT";
 
 /* =========================================================
    TYPES
@@ -40,6 +43,9 @@ const attachments = ref<ChatAttachment[]>([]);
 const messages = ref<AssistantMessage[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 const chatMode = ref<ChatMode>("regular");
+
+// STT
+const stt = useStt();
 
 // Mindmap specific state
 const mindmapData = ref<MindmapData | null>(null);
@@ -76,6 +82,14 @@ const estimatedTimeText = computed(() => {
 });
 
 const progressPercent = computed(() => Math.round(mindmapProgress.value));
+
+// STT status text
+const sttStatusText = computed(() => {
+  if (stt.isProcessing.value) return 'Processing audio...';
+  if (stt.isRecording.value) return 'Recording... click to stop';
+  if (!stt.isAvailable.value) return 'STT not available';
+  return 'Click to speak';
+});
 
 /* =========================================================
    PARSER HELPER FOR THINKING TOKENS
@@ -159,6 +173,21 @@ function removeAttachment(id: string) {
     URL.revokeObjectURL(attachment.previewUrl);
   }
   attachments.value = attachments.value.filter((item) => item.id !== id);
+}
+
+/* =========================================================
+   STT FUNCTIONS
+========================================================= */
+
+async function toggleRecording() {
+  if (stt.isRecording.value) {
+    await stt.stopRecording();
+    if (stt.transcript.value) {
+      input.value = input.value + (input.value ? ' ' : '') + stt.transcript.value;
+    }
+  } else {
+    await stt.startRecording();
+  }
 }
 
 /* =========================================================
@@ -401,6 +430,9 @@ onUnmounted(() => {
     }
   }
   stopMindmapProgress();
+  if (stt.isRecording.value) {
+    stt.stopRecording();
+  }
 });
 
 /* =========================================================
@@ -700,6 +732,18 @@ function switchMode(mode: ChatMode) {
             </div>
           </div>
         </div>
+
+        <!-- STT Processing State -->
+        <div v-if="stt.isProcessing.value" class="flex justify-start">
+          <div
+            class="rounded-2xl rounded-bl-md border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3"
+          >
+            <div class="flex items-center gap-3">
+              <LoaderCircle class="h-4 w-4 animate-spin text-amber-400" />
+              <span class="text-xs text-amber-300">Processing speech...</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -728,6 +772,14 @@ function switchMode(mode: ChatMode) {
           </div>
         </div>
 
+        <!-- STT Error Message -->
+        <div v-if="stt.error.value" class="mb-3 rounded-lg border border-rose-500/20 bg-rose-500/10 p-2 text-xs text-rose-300">
+          {{ stt.error.value }}
+          <button @click="stt.error.value = null" class="ml-2 text-rose-400 hover:text-rose-300">
+            <X class="h-3 w-3" />
+          </button>
+        </div>
+
         <!-- Input Form -->
         <form
           @submit.prevent="sendMessage"
@@ -742,7 +794,7 @@ function switchMode(mode: ChatMode) {
             v-model="input"
             rows="3"
             :placeholder="isMindmapMode ? 'Paste content for mindmap generation...' : 'Ask Shinrin AI...'"
-            :disabled="loading || mindmapLoading"
+            :disabled="loading || mindmapLoading || stt.isProcessing.value"
             class="w-full resize-none bg-transparent px-3 py-2 text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-600 disabled:opacity-50"
             @keydown.enter.exact.prevent="sendMessage"
           />
@@ -762,12 +814,40 @@ function switchMode(mode: ChatMode) {
                 v-if="isRegularMode"
                 type="button"
                 @click="openFilePicker"
-                :disabled="loading || mindmapLoading"
+                :disabled="loading || mindmapLoading || stt.isProcessing.value"
                 class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200 disabled:opacity-40"
                 title="Attach files"
               >
                 <Paperclip class="h-4 w-4" />
               </button>
+
+              <!-- STT Button -->
+              <button
+                v-if="isRegularMode"
+                type="button"
+                @click="toggleRecording"
+                :disabled="!stt.isAvailable.value || stt.isProcessing.value || loading || mindmapLoading"
+                class="flex h-8 w-8 items-center justify-center rounded-lg transition disabled:opacity-40"
+                :class="{
+                  'text-slate-500 hover:bg-white/[0.06] hover:text-slate-200': !stt.isRecording.value && stt.isAvailable.value,
+                  'text-rose-400 animate-pulse bg-rose-500/20': stt.isRecording.value,
+                  'text-slate-600': !stt.isAvailable.value || stt.isProcessing.value
+                }"
+                :title="sttStatusText"
+              >
+                <Mic v-if="!stt.isRecording.value" class="h-4 w-4" />
+                <MicOff v-else class="h-4 w-4" />
+              </button>
+
+              <!-- STT Status Dot -->
+              <div 
+                v-if="stt.isRecording.value || stt.isProcessing.value"
+                class="h-2 w-2 rounded-full"
+                :class="{
+                  'bg-emerald-400 animate-pulse': stt.isRecording.value,
+                  'bg-amber-400 animate-pulse': stt.isProcessing.value
+                }"
+              />
 
               <span v-if="isRegularMode" class="ml-1 text-[10px] text-slate-600">
                 Images, PDFs & documents
@@ -780,7 +860,7 @@ function switchMode(mode: ChatMode) {
 
             <button
               type="submit"
-              :disabled="loading || mindmapLoading || !hasContent"
+              :disabled="loading || mindmapLoading || stt.isProcessing.value || !hasContent"
               class="flex h-8 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-slate-950 transition disabled:cursor-not-allowed disabled:opacity-40"
               :class="
                 isMindmapMode
@@ -804,6 +884,12 @@ function switchMode(mode: ChatMode) {
           </span>
           <span v-if="isMindmapMode && mindmapLoading" class="text-[10px] text-fuchsia-500/70 animate-pulse">
             Generating...
+          </span>
+          <span v-if="stt.isRecording.value && isRegularMode" class="text-[10px] text-rose-400/70 animate-pulse">
+            🔴 Recording...
+          </span>
+          <span v-if="stt.isProcessing.value && isRegularMode" class="text-[10px] text-amber-400/70">
+            ⏳ Processing...
           </span>
         </div>
       </div>

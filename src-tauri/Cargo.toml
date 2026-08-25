@@ -25,15 +25,17 @@ serde_json = "1"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tauri-plugin-fs = "2"
 tauri-plugin-notification = "2"
-llama-cpp-2 = "0.1.154"
+llama-cpp-2 = {version = "0.1.154", features = ["dynamic-link"] }
 anyhow = "1.0.104"
 encoding_rs = "0.8"
+whisper-rs = "0.8"
 tokio = { version = "1", features = ["rt", "sync"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 scraper = "0.22"
 rand = "0.9"
 tauri-plugin-dialog = "2"
-
+cpal = "0.15"
+hound = "3.5"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
