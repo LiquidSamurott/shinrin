@@ -15,7 +15,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
-import Mathematics from "@tiptap/extension-mathematics";
+import { Mathematics } from "@tiptap/extension-mathematics";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import TextAlign from "@tiptap/extension-text-align";
@@ -23,8 +23,10 @@ import { TextStyleKit } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 
+import 'katex/dist/katex.min.css';
+
 import EditorToolbar from "./EditorToolbar.vue";
-import EquationModal from "./EquationModal.vue";
+import EquationEditorModal from "./EquationEditorModal.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -44,15 +46,13 @@ const emit = defineEmits<{
 }>();
 
 const equationOpen = ref(false);
+const editingEquation = ref("");
+const editingNodePos = ref<number | undefined>(undefined);
 
 /* -------------------------------------------------
    Image Upload / File Processing Handler
 -------------------------------------------------- */
 
-/**
- * Process image files safely and insert into editor.
- * Replace `uploadImage` logic if storing on AWS S3 / Cloudinary.
- */
 function processImageFile(file: File, viewEditor: Editor) {
   const reader = new FileReader();
 
@@ -69,6 +69,7 @@ function processImageFile(file: File, viewEditor: Editor) {
 
   reader.readAsDataURL(file);
 }
+
 /* -------------------------------------------------
    Custom Tiptap Image Paste & Drop Extension
 -------------------------------------------------- */
@@ -81,7 +82,6 @@ const ImagePasteDrop = Extension.create({
       new Plugin({
         key: new PluginKey("imagePasteDropPlugin"),
         props: {
-          // Prefixed 'view' with '_' to mark it as unused
           handlePaste(_view, event) {
             const items = event.clipboardData?.items;
             if (!items) return false;
@@ -99,7 +99,6 @@ const ImagePasteDrop = Extension.create({
             return false;
           },
 
-          // Prefixed 'view' and 'slice' with '_' to mark them as unused
           handleDrop(_view, event, _slice, moved) {
             if (moved) return false;
 
@@ -122,6 +121,21 @@ const ImagePasteDrop = Extension.create({
 });
 
 /* -------------------------------------------------
+   Equation Editor Functions
+-------------------------------------------------- */
+
+function openEquationEditor(latex?: string, pos?: number) {
+  editingEquation.value = latex || "";
+  editingNodePos.value = pos;
+  equationOpen.value = true;
+}
+
+function handleEquationUpdate(latex: string) {
+  // Optional: Handle any post-insertion logic
+  console.log("Equation updated:", latex);
+}
+
+/* -------------------------------------------------
    Create Editor
 -------------------------------------------------- */
 
@@ -141,15 +155,35 @@ const localEditor =
       Highlight,
 
       Image.configure({
-        allowBase64: true, // Prevents giant base64 string bloat
+        allowBase64: true,
         HTMLAttributes: {
           class: "rounded-lg max-w-full h-auto border border-slate-800 shadow-md my-4",
         },
       }),
 
-      ImagePasteDrop, // Embedded paste & drop handler
+      ImagePasteDrop,
 
-      Mathematics,
+      Mathematics.configure({
+        inlineOptions: {
+          onClick: (node, pos) => {
+            // Open the equation editor modal instead of prompt
+            openEquationEditor(node.attrs.latex, pos);
+          },
+        },
+        blockOptions: {
+          onClick: (node, pos) => {
+            // Open the equation editor modal instead of prompt
+            openEquationEditor(node.attrs.latex, pos);
+          },
+        },
+        katexOptions: {
+          throwOnError: false,
+          macros: {
+            '\\R': '\\mathbb{R}',
+            '\\N': '\\mathbb{N}',
+          },
+        },
+      }),
 
       TaskList,
 
@@ -172,6 +206,7 @@ const localEditor =
 
 defineExpose({
   editor: localEditor,
+  openEquationEditor,
 });
 
 /* -------------------------------------------------
@@ -215,7 +250,7 @@ onBeforeUnmount(() => {
     <EditorToolbar
       v-if="props.editable"
       :editor="localEditor"
-      @equation="equationOpen = true"
+      @equation="openEquationEditor()"
     />
 
     <div class="flex-1 overflow-hidden">
@@ -225,14 +260,26 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <EquationModal
+    <EquationEditorModal
       v-model:open="equationOpen"
       :editor="localEditor"
+      :initial-latex="editingEquation"
+      :node-pos="editingNodePos"
+      @update:latex="handleEquationUpdate"
     />
   </div>
 </template>
 
 <style scoped>
+/* Import KaTeX styles globally */
+:global(.katex) {
+  font-size: 1.1em;
+}
+
+:global(.katex .mathnormal) {
+  font-style: italic;
+}
+
 .rich-editor {
   flex: 1;
   height: 100%;
@@ -247,6 +294,38 @@ onBeforeUnmount(() => {
   color: #f1f5f9;
   outline: none;
   line-height: 1.7;
+}
+
+/* Mathematics node styling */
+:deep(.ProseMirror .tiptap-mathematics-render) {
+  padding: 0.5rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 0.375rem;
+  border: 1px solid rgba(51, 65, 85, 0.3);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+:deep(.ProseMirror .tiptap-mathematics-render:hover) {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+:deep(.ProseMirror .tiptap-mathematics-render--editable) {
+  cursor: pointer;
+}
+
+:deep(.ProseMirror .tiptap-mathematics-render[data-type="block-math"]) {
+  display: block;
+  text-align: center;
+  padding: 1rem;
+  margin: 0.75rem 0;
+}
+
+:deep(.ProseMirror .tiptap-mathematics-render[data-type="inline-math"]) {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
 }
 
 /* Image selection focus state */
@@ -322,6 +401,25 @@ onBeforeUnmount(() => {
   float: left;
   pointer-events: none;
   height: 0;
+}
+
+/* Mathematics node edit hint */
+:deep(.ProseMirror .tiptap-mathematics-render::after) {
+  content: "✎";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: #94a3b8;
+}
+
+:deep(.ProseMirror .tiptap-mathematics-render:hover::after) {
+  opacity: 1;
 }
 
 /* Custom Scrollbar */
