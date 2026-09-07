@@ -17,6 +17,7 @@ import {
 
 import FileAttachment from "./FileAttachment.vue";
 import MindmapVisualization from "./MindmapVisualization.vue";
+import AssistantMessageRenderer from "./AssistantMessageRenderer.vue";
 
 import type { ChatAttachment } from "../../types/attachement";
 import type { AssistantMessage } from "../../types/ai";
@@ -652,10 +653,10 @@ function switchMode(mode: ChatMode) {
                 </div>
               </div>
 
-              <!-- Final Response Output -->
-              <p v-if="message.type !== 'mindmap'" class="whitespace-pre-wrap text-sm leading-6 text-slate-300">
-                {{ parseMessageThinking(message).content }}
-              </p>
+              <!-- FINAL RESPONSE OUTPUT - USING THE RENDERER -->
+              <div v-if="message.type !== 'mindmap'">
+                <AssistantMessageRenderer :message="message" />
+              </div>
 
               <!-- Mindmap Visualization -->
               <div

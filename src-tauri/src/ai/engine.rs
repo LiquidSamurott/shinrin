@@ -18,7 +18,7 @@ use rand::random;
 
 use std::{
     num::{NonZeroU16, NonZeroU32},
-    path::{Path, PathBuf},
+    path::{Path},
 };
 
 // Exported constant required by generation.rs
@@ -185,8 +185,7 @@ AI ENGINE
 
 pub struct AiEngine {
     backend: LlamaBackend,
-    model: LlamaModel,
-    model_path: PathBuf,
+    model: LlamaModel
 }
 
 impl AiEngine {
@@ -215,14 +214,10 @@ impl AiEngine {
 
         Ok(Self {
             backend,
-            model,
-            model_path,
+            model
         })
     }
 
-    pub fn model_path(&self) -> &Path {
-        &self.model_path
-    }
 
     /// Primary 0-argument context creator using DEFAULT_CONTEXT_SIZE
     pub fn create_context(&self) -> Result<LlamaContext<'_>> {

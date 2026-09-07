@@ -1,4 +1,4 @@
-import type { KanbanStoreContext } from "../context";
+import type { KanbanStoreContext } from "./context";
 
 export function setSearch(
     this: KanbanStoreContext,

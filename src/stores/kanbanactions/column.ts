@@ -11,6 +11,9 @@ export async function createColumn(
   this: KanbanStoreContext,
   title: string
 ) {
+  if (this.selectedBoardId === null) {
+    throw new Error('Cannot create column: No board selected');
+  }
   const column: Column = {
     id: generateId(),
     boardId: this.selectedBoardId,

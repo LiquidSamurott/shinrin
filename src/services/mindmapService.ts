@@ -5,6 +5,7 @@ import type { MindmapData, AIMindmapNode, AIMindmapConnection } from "../types/m
 interface MindmapRequest {
   prompt: string;
   text: string;
+  images?: any[]
 }
 
 /**

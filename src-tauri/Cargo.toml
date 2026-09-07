@@ -30,12 +30,13 @@ anyhow = "1.0.104"
 encoding_rs = "0.8"
 whisper-rs = "0.8"
 tokio = { version = "1", features = ["rt", "sync"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 scraper = "0.22"
 rand = "0.9"
 tauri-plugin-dialog = "2"
 cpal = "0.15"
 hound = "3.5"
+futures-util = "0.3"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

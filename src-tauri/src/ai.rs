@@ -31,7 +31,6 @@ use serde::{
 
 use std::fs;
 use std::path::Path;
-use std::sync::Arc;
 use tokio::sync::oneshot;
 
 const MAX_REGENERATION_ATTEMPTS: usize = 3;
@@ -72,7 +71,6 @@ fn is_readable_text_file(path_str: &str, mime_type: &str) -> bool {
         .unwrap_or("")
         .to_lowercase();
 
-    // Expression evaluates directly to bool
     matches!(
         extension.as_str(),
         "txt"
@@ -105,8 +103,7 @@ fn is_readable_text_file(path_str: &str, mime_type: &str) -> bool {
             | "ini"
             | "env"
             | "log"
-    );
-    return false;
+    )
 }
 
 fn resolve_attachment_text(attachment: &AiAttachment) -> Option<String> {
@@ -144,6 +141,9 @@ pub async fn ai_chat(
     if prompt.is_empty() && attachments.is_empty() {
         return Err("Prompt and attachments cannot both be empty.".to_string());
     }
+
+    // Safely fetch the loaded engine thread handle from AiState
+    let engine = state.get_engine()?;
 
     let initial_task_mode = match mode.as_deref() {
         Some("focused") => TaskMode::Focused,
@@ -199,7 +199,6 @@ pub async fn ai_chat(
         String::new()
     };
 
-    let engine = Arc::clone(&state.engine);
     let (tx, rx) = oneshot::channel();
 
     // Spawns a dedicated OS thread with an 8MB stack to prevent 0xc0000409 stack overruns
@@ -208,7 +207,7 @@ pub async fn ai_chat(
         .stack_size(8 * 1024 * 1024)
         .spawn(move || {
             let res = (|| {
-                let engine = engine
+                let engine_guard = engine
                     .lock()
                     .map_err(|_| "AI engine mutex is poisoned due to a previous panic".to_string())?;
 
@@ -222,7 +221,7 @@ pub async fn ai_chat(
                     };
 
                     let raw_response = generation::generate(
-                        &engine,
+                        &*engine_guard,
                         &full_prompt,
                         language,
                         if web_context.is_empty() {
