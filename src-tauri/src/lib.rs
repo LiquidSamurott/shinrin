@@ -312,7 +312,7 @@ pub fn run() {
             // ============================================================
             // LOAD AI MODEL (Non-blocking on failure)
             // ============================================================
-            let ai_model_name = "Qwen3-4B-Q6_K.gguf";
+            let ai_model_name = "Qwen3.5-0.8B-Q8_0.gguf";
             let ai_engine = match find_model_file(handle, ai_model_name) {
                 Ok(path) => match AiEngine::load(path.to_str().unwrap()) {
                     Ok(engine) => Some(engine),
