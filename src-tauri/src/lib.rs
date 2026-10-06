@@ -288,6 +288,12 @@ pub fn run() {
                             sql: include_str!("../migrations/0005_settings.sql"),
                             kind: MigrationKind::Up,
                         },
+                         Migration {
+                            version: 6,
+                            description: "Quizzes",
+                            sql: include_str!("../migrations/0006_quizzes.sql"),
+                            kind: MigrationKind::Up,
+                        },
                     ],
                 )
                 .build(),
@@ -312,7 +318,7 @@ pub fn run() {
             // ============================================================
             // LOAD AI MODEL (Non-blocking on failure)
             // ============================================================
-            let ai_model_name = "Qwen3.5-0.8B-Q8_0.gguf";
+            let ai_model_name = "Qwen3.5-0.8B-UD-Q8_K_XL.gguf";
             let ai_engine = match find_model_file(handle, ai_model_name) {
                 Ok(path) => match AiEngine::load(path.to_str().unwrap()) {
                     Ok(engine) => Some(engine),

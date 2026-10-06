@@ -33,7 +33,7 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "models/Qwen3.5-0.8B-Q8_0.gguf",
+      "models/Qwen3.5-0.8B-UD-Q8_K_XL.gguf",
       "models/ggml-small.bin"
     ]
   }
