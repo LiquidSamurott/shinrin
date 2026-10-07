@@ -7,7 +7,7 @@ mod ai;
 mod ai_state;
 mod stt;
 
-use ai::{ai_chat, test_searxng_connection, test_searxng_search, AiEngine};
+use ai::{ai_chat, test_searxng_connection, test_searxng_search, AiEngine, generate_quiz};
 use ai_state::AiState;
 use stt::SttEngine;
 
@@ -301,6 +301,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             ai_chat,
+            generate_quiz,
             test_searxng_connection,
             test_searxng_search,
             stt_start_recording,

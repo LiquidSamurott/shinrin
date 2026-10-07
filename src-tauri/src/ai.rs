@@ -55,6 +55,353 @@ pub struct AiAttachment {
     pub base64: Option<String>,
 }
 
+/* ============================================================
+   AI QUIZ GENERATION
+============================================================ */
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateQuizRequest {
+    pub topic: String,
+    pub subject: String,
+    pub difficulty: String,
+    pub question_count: usize,
+    pub question_types: Vec<String>,
+
+    #[serde(default)]
+    pub instructions: String,
+}
+
+fn build_quiz_generation_prompt(
+    request: &GenerateQuizRequest,
+) -> Result<String, String> {
+    let topic = request.topic.trim();
+
+    if topic.is_empty() {
+        return Err("Quiz topic cannot be empty.".to_string());
+    }
+
+    let question_count = request.question_count.clamp(1, 8);
+
+    let allowed_types = [
+        "multiple_choice",
+        "multiple_select",
+        "true_false",
+        "short_answer",
+        "numeric",
+        "fill_blank",
+        "ordering",
+        "matching",
+        "code_output",
+        "code_completion",
+        "equation",
+    ];
+
+    let question_types = if request.question_types.is_empty() {
+        vec!["multiple_choice".to_string()]
+    } else {
+        request.question_types.clone()
+    };
+
+    for question_type in &question_types {
+        if !allowed_types.contains(&question_type.as_str()) {
+            return Err(format!(
+                "Unsupported quiz question type: {}",
+                question_type
+            ));
+        }
+    }
+
+    let type_list = question_types.join(", ");
+
+    Ok(format!(
+r#"
+You are Shinrin's local quiz generator.
+
+CRITICAL MANDATE:
+You MUST generate EXACTLY {question_count} items in the "questions" array.
+Do not generate fewer than {question_count} questions.
+Do not generate more than {question_count} questions.
+
+Topic: {topic}
+Subject: {subject}
+Difficulty: {difficulty}
+
+Allowed question types:
+{type_list}
+
+Additional instructions:
+{instructions}
+
+============================================================
+OUTPUT REQUIREMENTS
+============================================================
+
+RETURN ONLY VALID JSON.
+
+Do not use Markdown.
+Do not use ```json.
+Do not write explanations outside the JSON.
+Do not add comments.
+
+The top-level object MUST be:
+
+{{
+  "title": "string",
+  "description": "string",
+  "subject": "string",
+  "difficulty": "easy",
+  "questions": [
+    /* MUST CONTAIN EXACTLY {question_count} QUESTION OBJECTS */
+  ]
+}}
+
+The difficulty must be exactly one of:
+
+"easy"
+"medium"
+"hard"
+
+============================================================
+RICH TEXT / LATEX
+============================================================
+
+All human-readable text must be HTML.
+
+Use:
+
+<p>Text</p>
+
+<strong>Important</strong>
+
+<em>emphasis</em>
+
+For inline mathematics use:
+
+<span data-latex="x^2" data-type="inline-math"></span>
+
+For display mathematics use:
+
+<div data-latex="\lim_{{x \to 0}} \frac{{\sin x}}{{x}}" data-type="block-math"></div>
+
+NEVER use:
+
+$...$
+
+$$...$$
+
+Markdown math.
+
+NEVER put raw LaTeX directly into normal HTML text.
+
+============================================================
+QUESTION STRUCTURE
+============================================================
+
+Every question MUST have:
+
+{{
+  "type": "...",
+  "prompt": "<p>...</p>",
+  "content": {{ }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+MULTIPLE CHOICE
+============================================================
+
+{{
+  "type": "multiple_choice",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "options": [
+      {{ "id": "a", "text": "<p>...</p>" }},
+      {{ "id": "b", "text": "<p>...</p>" }},
+      {{ "id": "c", "text": "<p>...</p>" }},
+      {{ "id": "d", "text": "<p>...</p>" }}
+    ],
+    "correctAnswer": "a"
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+MULTIPLE SELECT
+============================================================
+
+{{
+  "type": "multiple_select",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "options": [
+      {{ "id": "a", "text": "<p>...</p>" }},
+      {{ "id": "b", "text": "<p>...</p>" }},
+      {{ "id": "c", "text": "<p>...</p>" }},
+      {{ "id": "d", "text": "<p>...</p>" }}
+    ],
+    "correctAnswers": ["a", "c"]
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+TRUE / FALSE
+============================================================
+
+{{
+  "type": "true_false",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "correctAnswer": true
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+SHORT ANSWER
+============================================================
+
+{{
+  "type": "short_answer",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "correctAnswer": "answer"
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+NUMERIC
+============================================================
+
+{{
+  "type": "numeric",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "correctAnswer": 42,
+    "tolerance": 0
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+FILL BLANK
+============================================================
+
+{{
+  "type": "fill_blank",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "correctAnswer": "answer",
+    "acceptedAnswers": ["answer", "alternate answer"]
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+ORDERING
+============================================================
+
+{{
+  "type": "ordering",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "items": [
+      {{ "id": "item1", "text": "<p>...</p>" }},
+      {{ "id": "item2", "text": "<p>...</p>" }},
+      {{ "id": "item3", "text": "<p>...</p>" }}
+    ],
+    "correctOrder": ["item2", "item1", "item3"]
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+MATCHING
+============================================================
+
+{{
+  "type": "matching",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "left": [
+      {{ "id": "left1", "text": "<p>...</p>" }},
+      {{ "id": "left2", "text": "<p>...</p>" }}
+    ],
+    "right": [
+      {{ "id": "right1", "text": "<p>...</p>" }},
+      {{ "id": "right2", "text": "<p>...</p>" }}
+    ],
+    "correctMatches": {{
+      "left1": "right2",
+      "left2": "right1"
+    }}
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+CODE OUTPUT
+============================================================
+
+{{
+  "type": "code_output",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "language": "java",
+    "code": "System.out.println(2 + 2);",
+    "correctAnswer": "4"
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+CODE COMPLETION
+============================================================
+
+{{
+  "type": "code_completion",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "language": "java",
+    "code": "public int add(int a, int b) {{\n    // TODO\n}}",
+    "correctAnswer": "return a + b;"
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+EQUATION
+============================================================
+
+{{
+  "type": "equation",
+  "prompt": "<p>...</p>",
+  "content": {{
+    "correctAnswer": "2x + 3",
+    "acceptedAnswers": ["2x + 3", "3 + 2x"]
+  }},
+  "explanation": "<p>...</p>"
+}}
+
+============================================================
+FINAL CHECKLIST
+============================================================
+
+1. Count the items in the "questions" array.
+2. Verify that there are EXACTLY {question_count} questions.
+3. Ensure no trailing commas exist in JSON object keys or arrays.
+"#,
+        topic = topic,
+        subject = request.subject.trim(),
+        difficulty = request.difficulty.trim(),
+        question_count = question_count,
+        type_list = type_list,
+        instructions = request.instructions.trim(),
+    ))
+}
+
 fn is_readable_text_file(path_str: &str, mime_type: &str) -> bool {
     if mime_type.starts_with("text/")
         || mime_type == "application/json"
@@ -266,4 +613,127 @@ pub async fn ai_chat(
 
     rx.await
         .map_err(|_| "AI inference thread panicked".to_string())?
+}
+
+#[tauri::command]
+pub async fn generate_quiz(
+    request: GenerateQuizRequest,
+    state: tauri::State<'_, AiState>,
+) -> Result<String, String> {
+    let prompt =
+        build_quiz_generation_prompt(&request)?;
+
+    let engine = state.get_engine()?;
+
+    let (tx, rx) = oneshot::channel();
+
+    std::thread::Builder::new()
+        .name("ai-quiz-generation".into())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(move || {
+            let result = (|| {
+                let engine_guard = engine
+                    .lock()
+                    .map_err(|_| {
+                        "AI engine mutex is poisoned due to a previous panic"
+                            .to_string()
+                    })?;
+
+                /*
+                 * We intentionally use the same generation
+                 * pipeline as ai_chat.
+                 *
+                 * Do NOT use clean_response() here because
+                 * the HTML/LaTeX JSON structure must remain
+                 * untouched.
+                 */
+                let raw_response =
+                    generation::generate(
+                        &*engine_guard,
+                        &prompt,
+                        language::Language::English,
+                        None,
+                        TaskMode::Focused,
+                        None,
+                    )
+                    .map_err(|error| {
+                        format!(
+                            "Quiz generation failed: {}",
+                            error
+                        )
+                    })?;
+
+                let cleaned =
+                    raw_response.trim();
+
+                /*
+                 * Small models sometimes still wrap JSON
+                 * in Markdown fences despite the prompt.
+                 *
+                 * Remove only the outer fence.
+                 */
+                let cleaned =
+                    if cleaned.starts_with(
+                        "```json",
+                    ) {
+                        cleaned
+                            .trim_start_matches(
+                                "```json",
+                            )
+                            .trim()
+                            .trim_end_matches(
+                                "```",
+                            )
+                            .trim()
+                    } else if cleaned.starts_with(
+                        "```",
+                    ) {
+                        cleaned
+                            .trim_start_matches(
+                                "```",
+                            )
+                            .trim()
+                            .trim_end_matches(
+                                "```",
+                            )
+                            .trim()
+                    } else {
+                        cleaned
+                    };
+
+                /*
+                 * Backend sanity check.
+                 *
+                 * We don't deserialize into the frontend's
+                 * entire QuizQuestion schema here because
+                 * the frontend owns the final validation.
+                 */
+                let _: serde_json::Value =
+                    serde_json::from_str(cleaned)
+                        .map_err(|error| {
+                            format!(
+                                "AI returned invalid quiz JSON: {}",
+                                error
+                            )
+                        })?;
+
+                Ok::<String, String>(
+                    cleaned.to_string()
+                )
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|error| {
+            format!(
+                "Failed to spawn quiz generation thread: {}",
+                error
+            )
+        })?;
+
+    rx.await
+        .map_err(|_| {
+            "Quiz generation thread panicked."
+                .to_string()
+        })?
 }
