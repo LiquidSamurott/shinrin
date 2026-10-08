@@ -342,33 +342,44 @@ MATCHING
 }}
 
 ============================================================
-CODE OUTPUT
+CODE OUTPUT RULES
 ============================================================
 
+CRITICAL RULE FOR CODE OUTPUT:
+1. The "code" field MUST contain a COMPLETE, EXECUTABLE code snippet (including function calls or print/log statements) that evaluates to a explicit result.
+2. DO NOT ask the user to write code in the prompt. The prompt MUST ask: "What is the output of this code?" or similar.
+3. "correctAnswer" MUST be the exact printed or evaluated output string of the execution.
+
+EXAMPLE:
 {{
   "type": "code_output",
-  "prompt": "<p>...</p>",
+  "prompt": "<p>What is the output of the following TypeScript snippet?</p>",
   "content": {{
-    "language": "java",
-    "code": "System.out.println(2 + 2);",
-    "correctAnswer": "4"
+    "language": "typescript",
+    "code": "function length(arr: number[]): number {{\n  return arr.length;\n}}\n\nconsole.log(length([10, 20, 30]));",
+    "correctAnswer": "3"
   }},
-  "explanation": "<p>...</p>"
+  "explanation": "<p>The length method evaluates array size, which contains 3 elements.</p>"
 }}
 
 ============================================================
-CODE COMPLETION
+CODE COMPLETION RULES
 ============================================================
 
+CRITICAL RULE FOR CODE COMPLETION:
+1. The "code" snippet MUST include a clear fill-in-the-blank placeholder such as "___" or "// TODO".
+2. "correctAnswer" MUST be the missing snippet/code segment required to complete the logic.
+
+EXAMPLE:
 {{
   "type": "code_completion",
-  "prompt": "<p>...</p>",
+  "prompt": "<p>Complete the function body to return the length of the array.</p>",
   "content": {{
-    "language": "java",
-    "code": "public int add(int a, int b) {{\n    // TODO\n}}",
-    "correctAnswer": "return a + b;"
+    "language": "typescript",
+    "code": "function length(arr: number[]): number {{\n  return arr.___\n}}",
+    "correctAnswer": "length"
   }},
-  "explanation": "<p>...</p>"
+  "explanation": "<p>The <code>length</code> property yields the array count.</p>"
 }}
 
 ============================================================
@@ -392,6 +403,7 @@ FINAL CHECKLIST
 1. Count the items in the "questions" array.
 2. Verify that there are EXACTLY {question_count} questions.
 3. Ensure no trailing commas exist in JSON object keys or arrays.
+4. Verify that code_output snippets ALWAYS invoke and print a value.
 "#,
         topic = topic,
         subject = request.subject.trim(),
